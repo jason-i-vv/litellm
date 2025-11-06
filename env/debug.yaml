@@ -1,0 +1,32 @@
+model_list:
+  - model_name: anyrouter
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-20241022
+      api_base: https://anyrouter.top
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+          Authorization: "Bearer sk-wU1Us0b94erBgOsHCtqersHQEWEjRPgb5uJa09FUBJF2RD5A"
+  - model_name: anyrouter
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-20241022
+      api_base: https://pmpjfbhq.cn-nb1.rainapp.top
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+          Authorization: "Bearer sk-wU1Us0b94erBgOsHCtqersHQEWEjRPgb5uJa09FUBJF2RD5A"
+  - model_name: anyrouter
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-20241022
+      api_base: https://q.quuvv.cn
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+          Authorization: "Bearer sk-wU1Us0b94erBgOsHCtqersHQEWEjRPgb5uJa09FUBJF2RD5A"
+
+general_settings: 
+  master_key: sk-1234 
+  database_url: "postgresql://llmproxy:dbpassword9090@10.16.201.2:5432/litellm?sslmode=disable&connect_timeout=10"

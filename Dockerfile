@@ -14,7 +14,7 @@ USER root
 # Install build dependencies
 RUN apk add --no-cache gcc python3-dev openssl openssl-dev
 
-
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && pip config set global.trusted-host mirrors.aliyun.com
 RUN pip install --upgrade pip>=24.3.1 && \
     pip install build
 
@@ -48,7 +48,7 @@ FROM $LITELLM_RUNTIME_IMAGE AS runtime
 USER root
 
 # Install runtime dependencies
-RUN apk add --no-cache openssl tzdata
+RUN apk add --no-cache openssl tzdata nodejs npm
 
 # Upgrade pip to fix CVE-2025-8869
 RUN pip install --upgrade pip>=24.3.1
@@ -69,6 +69,9 @@ RUN pip install *.whl /wheels/* --no-index --find-links=/wheels/ && rm -f *.whl 
 RUN chmod +x docker/install_auto_router.sh && ./docker/install_auto_router.sh
 
 # Generate prisma client
+# Set environment variables to avoid npm cache issues
+ENV NPM_CONFIG_CACHE=/tmp/.npm
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 RUN prisma generate
 RUN chmod +x docker/entrypoint.sh
 RUN chmod +x docker/prod_entrypoint.sh
