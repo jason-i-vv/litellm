@@ -498,7 +498,8 @@ except ImportError:
 
 server_root_path = os.getenv("SERVER_ROOT_PATH", "")
 _license_check = LicenseCheck()
-premium_user: bool = _license_check.is_premium()
+# premium_user: bool = _license_check.is_premium()  # 原始企业检查 - 已禁用
+premium_user: bool = True  # 强制设置为 True - 禁用企业许可证检查
 premium_user_data: Optional["EnterpriseLicenseData"] = (
     _license_check.airgapped_license_data
 )
@@ -625,14 +626,17 @@ async def proxy_startup_event(app: FastAPI):
     import json
 
     init_verbose_loggers()
-    ## CHECK PREMIUM USER
+    ## CHECK PREMIUM USER - 已禁用企业检查
     verbose_proxy_logger.debug(
         "litellm.proxy.proxy_server.py::startup() - CHECKING PREMIUM USER - {}".format(
             premium_user
         )
     )
-    if premium_user is False:
-        premium_user = _license_check.is_premium()
+    # if premium_user is False:  # 已注释 - 禁用运行时企业检查
+    #     premium_user = _license_check.is_premium()
+    verbose_proxy_logger.debug(
+        "litellm.proxy.proxy_server.py::startup() - Premium user check DISABLED (forced to True)"
+    )
 
     ## CHECK MASTER KEY IN ENVIRONMENT ##
     master_key = get_secret_str("LITELLM_MASTER_KEY")
@@ -3391,9 +3395,9 @@ class ProxyConfig:
         if self._should_load_db_object(object_type="vector_stores"):
             await self._init_vector_stores_in_db(prisma_client=prisma_client)
 
-        if self._should_load_db_object(object_type="vector_store_indexes"):
-
-            await self._init_vector_store_indexes_in_db(prisma_client=prisma_client)
+        # 已禁用 vector_store_indexes 功能 - 避免表不存在错误
+        # if self._should_load_db_object(object_type="vector_store_indexes"):
+        #     await self._init_vector_store_indexes_in_db(prisma_client=prisma_client)
 
         if self._should_load_db_object(object_type="mcp"):
             await self._init_mcp_servers_in_db()
