@@ -1,0 +1,23 @@
+model_list:
+  - model_name: glm-4.5-air
+    litellm_params:
+      model: anthropic/GLM-4.5-Air
+      api_base: https://open.bigmodel.cn/api/anthropic
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+          Authorization: "Bearer 4a795e3c00534209be668f2c875589be.BYWPk4PeUBrLPTIh"
+  - model_name: glm-4.6
+    litellm_params:
+      model: anthropic/GLM-4.6
+      api_base: https://open.bigmodel.cn/api/anthropic
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+        Authorization: "Bearer 4a795e3c00534209be668f2c875589be.BYWPk4PeUBrLPTIh"
+
+general_settings:
+  master_key: sk-1234
+  database_url: "postgresql://llmproxy:dbpassword9090@10.202.40.29:5433/litellm?sslmode=disable&connect_timeout=10"
