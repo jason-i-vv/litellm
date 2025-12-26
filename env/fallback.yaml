@@ -1,0 +1,50 @@
+model_list:
+  - model_name: claude-3-5-haiku-20241022
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-20241022
+      api_base: https://anyrouter.top
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+          Authorization: "Bearer sk-wU1Us0b94erBgOsHCtqersHQEWEjRPgb5uJa09FUBJF2RD5A"
+      model_info:
+        input_cost_per_token: 0.00000064  
+        output_cost_per_token: 0.0000032
+  - model_name: claude-sonnet-4-5-20250929
+    litellm_params:
+      model: anthropic/claude-sonnet-4-5-20250929
+      api_base: https://anyrouter.top
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+        Authorization: "Bearer sk-wU1Us0b94erBgOsHCtqersHQEWEjRPgb5uJa09FUBJF2RD5A"
+      model_info:
+        input_cost_per_token: 0.0000024  
+        output_cost_per_token: 0.000012   
+  - model_name: glm-4.5-air
+    litellm_params:
+      model: anthropic/GLM-4.5-Air
+      api_base: https://open.bigmodel.cn/api/anthropic
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+          Authorization: "Bearer 4a795e3c00534209be668f2c875589be.BYWPk4PeUBrLPTIh"
+  - model_name: glm-4.6
+    litellm_params:
+      model: anthropic/GLM-4.6
+      api_base: https://open.bigmodel.cn/api/anthropic
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+        Authorization: "Bearer 4a795e3c00534209be668f2c875589be.BYWPk4PeUBrLPTIh"
+
+general_settings:
+  master_key: sk-1234
+  database_url: "postgresql://llmproxy:dbpassword9090@db:5432/litellm?sslmode=disable&connect_timeout=10"
+
+router_settings:
+  fallbacks: [{"claude-sonnet-4-5-20250929": ["glm-4.6"]},{"claude-3-5-haiku-20241022":["glm-4.5-air"]}]

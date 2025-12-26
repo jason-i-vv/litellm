@@ -1,8 +1,10 @@
+
+# https://github.com/BerriAI/litellm/pull/17406/files issue
 # Base image for building
-ARG LITELLM_BUILD_IMAGE=cgr.dev/chainguard/python:latest-dev
+ARG LITELLM_BUILD_IMAGE=cgr.dev/chainguard/wolfi-base
 
 # Runtime image
-ARG LITELLM_RUNTIME_IMAGE=cgr.dev/chainguard/python:latest-dev
+ARG LITELLM_RUNTIME_IMAGE=cgr.dev/chainguard/wolfi-base
 # Builder stage
 FROM $LITELLM_BUILD_IMAGE AS builder
 
@@ -12,11 +14,10 @@ WORKDIR /app
 USER root
 
 # Install build dependencies
-RUN apk add --no-cache gcc python3-dev openssl openssl-dev
+RUN apk add --no-cache bash gcc py3-pip python3 python3-dev openssl openssl-dev
 
 RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && pip config set global.trusted-host mirrors.aliyun.com
-RUN pip install --upgrade pip>=24.3.1 && \
-    pip install build
+RUN python -m pip install build
 
 # Copy the current directory contents into the container at /app
 COPY . .
@@ -51,7 +52,7 @@ USER root
 RUN apk add --no-cache openssl tzdata nodejs npm
 
 # Upgrade pip to fix CVE-2025-8869
-RUN pip install --upgrade pip>=24.3.1
+RUN apk add --no-cache bash openssl tzdata nodejs npm python3 py3-pip
 
 WORKDIR /app
 # Copy the current directory contents into the container at /app
