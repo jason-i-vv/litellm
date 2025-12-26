@@ -516,11 +516,11 @@ class ModelManagementAuthChecks:
         team_obj: Optional[LiteLLM_TeamTable] = None,
         premium_user: bool = False,
     ) -> Literal[True]:
-        if premium_user is False:
-            raise HTTPException(
-                status_code=403,
-                detail={"error": CommonProxyErrors.not_premium_user.value},
-            )
+        # if premium_user is False:
+        #     raise HTTPException(
+        #         status_code=403,
+        #         detail={"error": CommonProxyErrors.not_premium_user.value},
+        #     )
         if (
             user_api_key_dict.user_role
             and user_api_key_dict.user_role == LitellmUserRoles.PROXY_ADMIN

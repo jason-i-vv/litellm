@@ -1,3 +1,5 @@
+
+# https://github.com/BerriAI/litellm/pull/17406/files issue
 # Base image for building
 ARG LITELLM_BUILD_IMAGE=cgr.dev/chainguard/wolfi-base
 
@@ -14,6 +16,7 @@ USER root
 # Install build dependencies
 RUN apk add --no-cache bash gcc py3-pip python3 python3-dev openssl openssl-dev
 
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && pip config set global.trusted-host mirrors.aliyun.com
 RUN python -m pip install build
 
 # Copy the current directory contents into the container at /app
@@ -46,6 +49,9 @@ FROM $LITELLM_RUNTIME_IMAGE AS runtime
 USER root
 
 # Install runtime dependencies
+RUN apk add --no-cache openssl tzdata nodejs npm
+
+# Upgrade pip to fix CVE-2025-8869
 RUN apk add --no-cache bash openssl tzdata nodejs npm python3 py3-pip
 
 WORKDIR /app
@@ -60,14 +66,13 @@ COPY --from=builder /wheels/ /wheels/
 # Install the built wheel using pip; again using a wildcard if it's the only file
 RUN pip install *.whl /wheels/* --no-index --find-links=/wheels/ && rm -f *.whl && rm -rf /wheels
 
-# Remove test files and keys from dependencies
-RUN find /usr/lib -type f -path "*/tornado/test/*" -delete && \
-    find /usr/lib -type d -path "*/tornado/test" -delete
-
 # Install semantic_router and aurelio-sdk using script
 RUN chmod +x docker/install_auto_router.sh && ./docker/install_auto_router.sh
 
 # Generate prisma client
+# Set environment variables to avoid npm cache issues
+ENV NPM_CONFIG_CACHE=/tmp/.npm
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 RUN prisma generate
 RUN chmod +x docker/entrypoint.sh
 RUN chmod +x docker/prod_entrypoint.sh

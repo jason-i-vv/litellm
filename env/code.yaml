@@ -1,0 +1,59 @@
+model_list:
+  - model_name: claude-3-5-haiku-20241022
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-20241022
+      api_base: https://anyrouter.top
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+          Authorization: "Bearer sk-wU1Us0b94erBgOsHCtqersHQEWEjRPgb5uJa09FUBJF2RD5A"
+  - model_name: claude-3-5-haiku-20241022
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-20241022
+      api_base: https://pmpjfbhq.cn-nb1.rainapp.top
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+          Authorization: "Bearer sk-wU1Us0b94erBgOsHCtqersHQEWEjRPgb5uJa09FUBJF2RD5A"
+  - model_name: claude-3-5-haiku-20241022
+    litellm_params:
+      model: anthropic/claude-3-5-haiku-20241022
+      api_base: https://q.quuvv.cn
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+          Authorization: "Bearer sk-wU1Us0b94erBgOsHCtqersHQEWEjRPgb5uJa09FUBJF2RD5A"
+  - model_name: claude-sonnet-4-5-20250929
+    litellm_params:
+      model: anthropic/claude-sonnet-4-5-20250929
+      api_base: https://anyrouter.top
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+        Authorization: "Bearer sk-wU1Us0b94erBgOsHCtqersHQEWEjRPgb5uJa09FUBJF2RD5A"
+  - model_name: claude-sonnet-4-5-20250929
+    litellm_params:
+      model: anthropic/claude-sonnet-4-5-20250929
+      api_base: https://pmpjfbhq.cn-nb1.rainapp.top
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+        Authorization: "Bearer sk-wU1Us0b94erBgOsHCtqersHQEWEjRPgb5uJa09FUBJF2RD5A"
+  - model_name: claude-sonnet-4-5-20250929
+    litellm_params:
+      model: anthropic/claude-sonnet-4-5-20250929
+      api_base: https://q.quuvv.cn
+      timeout: 10                      # timeout in (seconds)
+      stream_timeout: 0.01              # timeout for stream requests (seconds)
+      max_retries: 5
+      extra_headers:
+        Authorization: "Bearer sk-wU1Us0b94erBgOsHCtqersHQEWEjRPgb5uJa09FUBJF2RD5A"
+
+general_settings: 
+  master_key: sk-1234 
+  database_url: "postgresql://llmproxy:dbpassword9090@db:5432/litellm?sslmode=disable&connect_timeout=10"

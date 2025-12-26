@@ -80,6 +80,12 @@ class AnthropicMessagesConfig(BaseAnthropicMessagesConfig):
             context_management=optional_params.get("context_management"),
         )
 
+        # Add extra_headers from litellm_params if present
+        extra_headers = litellm_params.get("extra_headers")
+        if extra_headers and isinstance(extra_headers, dict):
+            verbose_logger.debug(f"Adding extra_headers from litellm_params: {extra_headers}")
+            headers.update(extra_headers)
+
         return headers, api_base
 
     def transform_anthropic_messages_request(
