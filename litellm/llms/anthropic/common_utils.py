@@ -303,6 +303,8 @@ class AnthropicModelInfo(BaseLLMModelInfo):
         user_anthropic_beta_headers: Optional[List[str]] = None,
         code_execution_tool_used: bool = False,
         container_with_skills_used: bool = False,
+        extra_headers: Optional[dict] = None,
+        existing_headers: Optional[dict] = None,
     ) -> dict:
         betas = set()
         if prompt_caching_set:
@@ -342,6 +344,14 @@ class AnthropicModelInfo(BaseLLMModelInfo):
             "content-type": "application/json",
         }
 
+        # 检查是否已经有自定义的 Authorization 头（在 extra_headers 或 existing_headers 中）
+        has_custom_auth = (
+            (extra_headers is not None and ("Authorization" in extra_headers or "authorization" in extra_headers))
+            or (existing_headers is not None and ("Authorization" in existing_headers or "authorization" in existing_headers))
+        )
+        if not has_custom_auth:
+            headers["x-api-key"] = api_key
+
         if user_anthropic_beta_headers is not None:
             betas.update(user_anthropic_beta_headers)
 
@@ -366,7 +376,17 @@ class AnthropicModelInfo(BaseLLMModelInfo):
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
     ) -> Dict:
-        if api_key is None:
+        # 检查是否有自定义的 Authorization 头
+        extra_headers = optional_params.get("extra_headers", {})
+        has_custom_auth = (
+            "Authorization" in extra_headers
+            or "authorization" in extra_headers
+            or "Authorization" in headers
+            or "authorization" in headers
+        )
+
+        # 只有在没有自定义认证头时才要求 api_key
+        if api_key is None and not has_custom_auth:
             raise litellm.AuthenticationError(
                 message="Missing Anthropic API Key - A call is being made to anthropic but no key is set either in the environment variables or via params. Please set `ANTHROPIC_API_KEY` in your environment vars",
                 llm_provider="anthropic",
@@ -395,7 +415,7 @@ class AnthropicModelInfo(BaseLLMModelInfo):
             computer_tool_used=computer_tool_used,
             prompt_caching_set=prompt_caching_set,
             pdf_used=pdf_used,
-            api_key=api_key,
+            api_key=api_key or "",  # 如果没有 api_key,传递空字符串
             file_id_used=file_id_used,
             web_search_tool_used=web_search_tool_used,
             is_vertex_request=optional_params.get("is_vertex_request", False),
@@ -407,9 +427,15 @@ class AnthropicModelInfo(BaseLLMModelInfo):
             effort_used=effort_used,
             code_execution_tool_used=code_execution_tool_used,
             container_with_skills_used=container_with_skills_used,
+            extra_headers=extra_headers,  # 传递 extra_headers 以便检查自定义认证
+            existing_headers=headers,  # 传递已有的 headers 以便检查是否已有 Authorization
         )
 
         headers = {**headers, **anthropic_headers}
+
+        # 将 extra_headers 合并到最终的 headers 中（extra_headers 优先级更高）
+        if extra_headers:
+            headers = {**headers, **extra_headers}
 
         return headers
 
