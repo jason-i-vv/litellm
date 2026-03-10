@@ -28,6 +28,17 @@ def get_model_cost_map(url: str) -> dict:
         )
         return content
 
+    # Support file:// protocol for local files
+    if url.startswith("file://"):
+        import json
+        file_path = url.replace("file://", "")
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = json.load(f)
+            return content
+        except Exception:
+            pass  # Fall through to other methods
+
     try:
         response = httpx.get(
             url, timeout=5

@@ -206,6 +206,127 @@ class ProxyBaseLLMRequestProcessing:
         self.data = data
 
     @staticmethod
+    def apply_model_discount_from_db(
+        model_id: Optional[str],
+        prisma_client,
+    ) -> None:
+        """
+        从数据库读取 model_info 中的 discount 配置并应用到 litellm.cost_discount_config
+
+        Args:
+            model_id: 数据库中的 model_id (UUID)
+            prisma_client: Prisma 客户端实例
+        """
+        if not model_id or not prisma_client:
+            return
+
+        try:
+            # 从数据库查询 model_info
+            model_record = await prisma_client.litellm_proxy_model_table.find_unique(
+                where={"model_id": model_id}
+            )
+
+            if model_record and model_record.model_info:
+                model_info = model_record.model_info
+
+                # 提取 discount 配置
+                if isinstance(model_info, dict):
+                    discount = model_info.get("discount")
+                elif isinstance(model_info, str):
+                    # 如果 model_info 是 JSON 字符串，解析它
+                    try:
+                        parsed_info = json.loads(model_info)
+                        discount = parsed_info.get("discount")
+                    except json.JSONDecodeError:
+                        verbose_proxy_logger.warning(
+                            f"Failed to parse model_info as JSON for model_id={model_id}"
+                        )
+                        return
+                else:
+                    discount = None
+
+                if discount is not None:
+                    # 验证 discount 值（0-1 之间）
+                    if isinstance(discount, (int, float)) and 0 <= discount <= 1:
+                        # 获取 model_name
+                        model_name = model_record.model_name
+
+                        # 设置到 litellm.cost_discount_config
+                        litellm.cost_discount_config[model_name] = discount
+
+                        verbose_proxy_logger.info(
+                            f"Applied {discount*100}% discount to model '{model_name}' "
+                            f"(model_id={model_id}) from database model_info"
+                        )
+                    else:
+                        verbose_proxy_logger.warning(
+                            f"Invalid discount value {discount} for model_id={model_id}. "
+                            f"Must be between 0 and 1."
+                        )
+        except Exception as e:
+            # 记录错误但不中断请求处理
+            verbose_proxy_logger.error(
+                f"Error applying model discount from database for model_id={model_id}: {str(e)}"
+            )
+
+    @staticmethod
+    async def apply_model_discount_by_name(
+        model_name: str,
+        prisma_client,
+    ) -> None:
+        """
+        根据 model_name 从数据库读取 discount 并应用
+
+        Args:
+            model_name: 模型名称
+            prisma_client: Prisma 客户端实例
+        """
+        if not model_name or not prisma_client:
+            return
+
+        try:
+            # 根据 model_name 查询数据库中的 model 记录
+            model_record = await prisma_client.litellm_proxy_model_table.find_first(
+                where={"model_name": model_name}
+            )
+
+            if model_record and model_record.model_info:
+                model_info = model_record.model_info
+
+                # 提取 discount 配置
+                if isinstance(model_info, dict):
+                    discount = model_info.get("discount")
+                elif isinstance(model_info, str):
+                    try:
+                        parsed_info = json.loads(model_info)
+                        discount = parsed_info.get("discount")
+                    except json.JSONDecodeError:
+                        discount = None
+                else:
+                    discount = None
+
+                if discount is not None:
+                    # 验证 discount 值（0-1 之间）
+                    if isinstance(discount, (int, float)) and 0 <= discount <= 1:
+                        # 设置到 litellm.cost_discount_config
+                        litellm.cost_discount_config[model_name] = discount
+
+                        verbose_proxy_logger.info(
+                            f"Applied {discount*100}% discount to model '{model_name}' "
+                            f"(model_id={model_record.model_id}) from database model_info"
+                        )
+                    else:
+                        verbose_proxy_logger.warning(
+                            f"Invalid discount value {discount} for model '{model_name}'. "
+                            f"Must be between 0 and 1."
+                        )
+        except Exception as e:
+            # 记录错误但不中断请求处理
+            verbose_proxy_logger.error(
+                f"Error applying model discount from database for model '{model_name}': {str(e)}"
+            )
+
+    @staticmethod
     def get_custom_headers(
         *,
         user_api_key_dict: UserAPIKeyAuth,
@@ -550,6 +671,25 @@ class ProxyBaseLLMRequestProcessing:
         if contents:
             self.data["contents"] = contents
 
+        ### APPLY MODEL DISCOUNT FROM DATABASE ###
+        # 保存当前的 cost_discount_config 以便后续恢复
+        old_cost_discount_config = litellm.cost_discount_config.copy() if hasattr(litellm, 'cost_discount_config') and litellm.cost_discount_config else {}
+
+        # 在调用模型前，从数据库读取 model_info 中的 discount 并应用
+        model_name = self.data.get("model", "")
+        if model_name:
+            try:
+                from litellm.proxy.proxy_server import prisma_client
+                if prisma_client is not None:
+                    await ProxyBaseLLMRequestProcessing.apply_model_discount_by_name(
+                        model_name=model_name,
+                        prisma_client=prisma_client
+                    )
+            except Exception as e:
+                verbose_proxy_logger.error(
+                    f"Error applying model discount for model '{model_name}': {str(e)}"
+                )
+
         ### ROUTE THE REQUEST ###
         # Do not change this - it should be a constant time fetch - ALWAYS
         llm_call = await route_request(
@@ -690,6 +830,9 @@ class ProxyBaseLLMRequestProcessing:
             )
         )
         await check_response_size_is_safe(response=response)
+
+        # 恢复 cost_discount_config
+        litellm.cost_discount_config = old_cost_discount_config
 
         return response
 

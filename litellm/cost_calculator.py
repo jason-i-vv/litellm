@@ -678,13 +678,19 @@ def _infer_call_type(
 def _apply_cost_discount(
     base_cost: float,
     custom_llm_provider: Optional[str],
+    model: Optional[str] = None,
 ) -> Tuple[float, float, float]:
     """
-    Apply provider-specific cost discount from module-level config.
+    Apply model-specific or provider-specific cost discount from module-level config.
+
+    Priority:
+    1. Model-specific discount (from model_info in database)
+    2. Provider-specific discount (fallback)
 
     Args:
         base_cost: The base cost before discount
         custom_llm_provider: The LLM provider name
+        model: The model name (for model-specific discounts)
 
     Returns:
         Tuple of (final_cost, discount_percent, discount_amount)
@@ -693,6 +699,20 @@ def _apply_cost_discount(
     discount_percent = 0.0
     discount_amount = 0.0
 
+    # 优先检查 model 级别折扣
+    if model and model in litellm.cost_discount_config:
+        discount_percent = litellm.cost_discount_config[model]
+        discount_amount = original_cost * discount_percent
+        final_cost = original_cost - discount_amount
+
+        verbose_logger.debug(
+            f"Applied {discount_percent*100}% discount to model {model}: "
+            f"${original_cost:.6f} -> ${final_cost:.6f} (saved ${discount_amount:.6f})"
+        )
+
+        return final_cost, discount_percent, discount_amount
+
+    # Provider 级别折扣（作为后备）
     if custom_llm_provider and custom_llm_provider in litellm.cost_discount_config:
         discount_percent = litellm.cost_discount_config[custom_llm_provider]
         discount_amount = original_cost * discount_percent
@@ -1176,6 +1196,7 @@ def completion_cost(  # noqa: PLR0915
                     ) = _apply_cost_discount(
                         base_cost=_final_cost,
                         custom_llm_provider=custom_llm_provider,
+                        model=search_model,
                     )
 
                     # Apply margin from module-level config if configured
@@ -1323,6 +1344,7 @@ def completion_cost(  # noqa: PLR0915
                 _final_cost, discount_percent, discount_amount = _apply_cost_discount(
                     base_cost=_final_cost,
                     custom_llm_provider=custom_llm_provider,
+                    model=model,
                 )
 
                 # Apply margin from module-level config if configured

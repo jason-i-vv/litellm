@@ -6656,6 +6656,18 @@
             "/v1/audio/transcriptions"
         ]
     },
+    "anthropic/MiniMax-M2.5": {
+        "input_cost_per_token": 2.917e-7,
+        "output_cost_per_token": 1.167e-6,
+        "cache_read_input_token_cost": 2.917e-8,
+        "cache_creation_input_token_cost": 3.646e-7,
+        "litellm_provider": "anthropic",
+        "mode": "chat",
+        "supports_function_calling": true,
+        "supports_system_messages": true,
+        "max_input_tokens": 128000,
+        "max_output_tokens": 8192
+    },
     "claude-3-5-haiku-20241022": {
         "cache_creation_input_token_cost": 1e-06,
         "cache_creation_input_token_cost_above_1hr": 6e-06,
