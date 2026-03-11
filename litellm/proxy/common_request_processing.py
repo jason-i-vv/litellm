@@ -359,7 +359,7 @@ class ProxyBaseLLMRequestProcessing:
         self.data = data
 
     @staticmethod
-    def apply_model_discount_from_db(
+    async def apply_model_discount_from_db(
         model_id: Optional[str],
         prisma_client,
     ) -> None:
