@@ -1,7 +1,5 @@
 from typing import Optional, Tuple
 
-import httpx
-
 import litellm
 from litellm.constants import REPLICATE_MODEL_NAME_WITH_ID_LENGTH
 from litellm.llms.openai_like.json_loader import JSONProviderRegistry
@@ -53,7 +51,7 @@ def handle_cohere_chat_model_custom_llm_provider(
         if custom_llm_provider == "cohere" and model in litellm.cohere_chat_models:
             return model, "cohere_chat"
 
-    if "/" in model:
+    if model and "/" in model:
         _custom_llm_provider, _model = model.split("/", 1)
         if (
             _custom_llm_provider
@@ -86,7 +84,7 @@ def handle_anthropic_text_model_custom_llm_provider(
         ):
             return model, "anthropic_text"
 
-    if "/" in model:
+    if model and "/" in model:
         _custom_llm_provider, _model = model.split("/", 1)
         if (
             _custom_llm_provider
@@ -115,6 +113,12 @@ def get_llm_provider(  # noqa: PLR0915
     Return model, custom_llm_provider, dynamic_api_key, api_base
     """
     try:
+        # Early validation - model is required
+        if model is None:
+            raise ValueError(
+                "model parameter is required but was None. Please provide a valid model name."
+            )
+
         if litellm.LiteLLMProxyChatConfig._should_use_litellm_proxy_by_default(
             litellm_params=litellm_params
         ):
@@ -153,6 +157,14 @@ def get_llm_provider(  # noqa: PLR0915
             model.split("/")[0] != custom_llm_provider
         ):  # handle scenario where model="azure/*" and custom_llm_provider="azure"
             model = custom_llm_provider + "/" + model
+
+        # Native OpenRouter models have IDs like "openrouter/free" where the
+        # "openrouter/" prefix is part of the actual model name on the API.
+        # When called from a bridge (e.g. anthropic_messages adapter),
+        # custom_llm_provider is already resolved, so return early to prevent
+        # the provider-list stripping below from removing the prefix.
+        if custom_llm_provider == "openrouter" and model.startswith("openrouter/"):
+            return model, custom_llm_provider, dynamic_api_key, api_base
 
         if api_key and api_key.startswith("os.environ/"):
             dynamic_api_key = get_secret_str(api_key)
@@ -229,10 +241,10 @@ def get_llm_provider(  # noqa: PLR0915
                     elif endpoint == "https://api.ai21.com/studio/v1":
                         custom_llm_provider = "ai21_chat"
                         dynamic_api_key = get_secret_str("AI21_API_KEY")
-                    elif endpoint == "https://codestral.mistral.ai/v1":
+                    elif endpoint == "codestral.mistral.ai/v1/chat/completions":
                         custom_llm_provider = "codestral"
                         dynamic_api_key = get_secret_str("CODESTRAL_API_KEY")
-                    elif endpoint == "https://codestral.mistral.ai/v1":
+                    elif endpoint == "codestral.mistral.ai/v1/fim/completions":
                         custom_llm_provider = "text-completion-codestral"
                         dynamic_api_key = get_secret_str("CODESTRAL_API_KEY")
                     elif endpoint == "app.empower.dev/api/v1":
@@ -453,11 +465,7 @@ def get_llm_provider(  # noqa: PLR0915
             raise litellm.exceptions.BadRequestError(  # type: ignore
                 message=error_str,
                 model=model,
-                response=httpx.Response(
-                    status_code=400,
-                    content=error_str,
-                    request=httpx.Request(method="completion", url="https://github.com/BerriAI/litellm"),  # type: ignore
-                ),
+                response=None,
                 llm_provider="",
             )
         if api_base is not None and not isinstance(api_base, str):
@@ -481,11 +489,7 @@ def get_llm_provider(  # noqa: PLR0915
             raise litellm.exceptions.BadRequestError(  # type: ignore
                 message=f"GetLLMProvider Exception - {str(e)}\n\noriginal model: {model}",
                 model=model,
-                response=httpx.Response(
-                    status_code=400,
-                    content=error_str,
-                    request=httpx.Request(method="completion", url="https://github.com/BerriAI/litellm"),  # type: ignore
-                ),
+                response=None,
                 llm_provider="",
             )
 
@@ -555,6 +559,13 @@ def _get_openai_compatible_provider_info(  # noqa: PLR0915
             api_base,
             dynamic_api_key,
         ) = litellm.GroqChatConfig()._get_openai_compatible_provider_info(
+            api_base, api_key
+        )
+    elif custom_llm_provider == "bedrock_mantle":
+        (
+            api_base,
+            dynamic_api_key,
+        ) = litellm.BedrockMantleChatConfig()._get_openai_compatible_provider_info(
             api_base, api_key
         )
     elif custom_llm_provider == "nvidia_nim":
@@ -768,6 +779,14 @@ def _get_openai_compatible_provider_info(  # noqa: PLR0915
         ) = litellm.GithubCopilotConfig()._get_openai_compatible_provider_info(
             model, api_base, api_key, custom_llm_provider
         )
+    elif custom_llm_provider == "chatgpt":
+        (
+            api_base,
+            dynamic_api_key,
+            custom_llm_provider,
+        ) = litellm.ChatGPTConfig()._get_openai_compatible_provider_info(
+            model, api_base, api_key, custom_llm_provider
+        )
     elif custom_llm_provider == "novita":
         api_base = (
             api_base
@@ -913,6 +932,14 @@ def _get_openai_compatible_provider_info(  # noqa: PLR0915
             or "http://localhost:2024"
         )
         dynamic_api_key = api_key or get_secret_str("LANGGRAPH_API_KEY")
+    elif custom_llm_provider == "manus":
+        # Manus is OpenAI compatible for responses API
+        api_base = (
+            api_base
+            or get_secret_str("MANUS_API_BASE")
+            or "https://api.manus.im"
+        )
+        dynamic_api_key = api_key or get_secret_str("MANUS_API_KEY")
 
     if api_base is not None and not isinstance(api_base, str):
         raise Exception("api base needs to be a string. api_base={}".format(api_base))

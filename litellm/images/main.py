@@ -404,6 +404,7 @@ def image_generation(  # noqa: PLR0915
             litellm.LlmProviders.STABILITY,
             litellm.LlmProviders.RUNWAYML,
             litellm.LlmProviders.VERTEX_AI,
+            litellm.LlmProviders.OPENROUTER
         ):
             if image_generation_config is None:
                 raise ValueError(
@@ -468,6 +469,8 @@ def image_generation(  # noqa: PLR0915
             or custom_llm_provider == LlmProviders.LITELLM_PROXY.value
             or custom_llm_provider in litellm.openai_compatible_providers
         ):
+            if extra_headers is not None:
+                optional_params["extra_headers"] = extra_headers
             # Forward OpenAI organization if present (set by proxy pre-call utils)
             organization: Optional[str] = kwargs.get("organization", None)
             model_response = openai_chat_completions.image_generation(
@@ -482,6 +485,7 @@ def image_generation(  # noqa: PLR0915
                 organization=organization,
                 aimg_generation=aimg_generation,
                 client=client,
+                headers=headers,
             )
         elif custom_llm_provider == "bedrock":
             if model is None:
@@ -713,8 +717,8 @@ def image_variation(
 
 @client
 def image_edit(  # noqa: PLR0915
-    image: Union[FileTypes, List[FileTypes]],
-    prompt: str,
+    image: Optional[Union[FileTypes, List[FileTypes]]] = None,
+    prompt: Optional[str]= None,
     model: Optional[str] = None,
     mask: Optional[str] = None,
     n: Optional[int] = None,
@@ -762,10 +766,12 @@ def image_edit(  # noqa: PLR0915
         }  # model-specific params - pass them straight to the model/provider
         litellm_logging_obj: LiteLLMLoggingObj = kwargs.get("litellm_logging_obj")  # type: ignore
         litellm_call_id: Optional[str] = kwargs.get("litellm_call_id", None)
+        model_info = kwargs.get("model_info", None)
+        metadata = kwargs.get("metadata", {})
         _is_async = kwargs.pop("async_call", False) is True
 
         # add images / or return a single image
-        images = image if isinstance(image, list) else [image]
+        images = image if isinstance(image, list) else ([image] if image is not None else [])
 
         headers_from_kwargs = kwargs.get("headers")
         merged_extra_headers: Dict[str, Any] = {}
@@ -870,8 +876,10 @@ def image_edit(  # noqa: PLR0915
             user=user,
             optional_params=dict(image_edit_request_params),
             litellm_params={
-                "litellm_call_id": litellm_call_id,
                 **image_edit_request_params,
+                "litellm_call_id": litellm_call_id,
+                "model_info": model_info,
+                "metadata": metadata,
             },
             custom_llm_provider=custom_llm_provider,
         )
